@@ -9,6 +9,8 @@ import React, {
 import { graphql } from "react-relay";
 import { VirtuosoHandle } from "react-virtuoso";
 
+import { Button } from "@washingtonpost/wpds-ui-kit";
+
 import { useCoralContext } from "coral-framework/lib/bootstrap";
 import { useViewerEvent } from "coral-framework/lib/events";
 import { IntersectionProvider } from "coral-framework/lib/intersection";
@@ -280,6 +282,8 @@ export const StreamContainer: FunctionComponent<Props> = (props) => {
         )}
         <CommunityGuidelinesContainer settings={props.settings} />
         {isRatingsAndReviews && <StoryRatingContainer story={props.story} />}
+        <h1>boop</h1>
+        <Button>hello</Button>
         {showCommentForm &&
           (alternateOldestViewEnabled ? (
             <MatchMedia gtDeviceWidth="mobileMax">

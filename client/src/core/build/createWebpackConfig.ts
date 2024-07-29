@@ -227,12 +227,12 @@ export default function createWebpackConfig(
           .replace(/\\/g, "/"),
     },
     resolve: {
-      extensions: [".js", ".json", ".ts", ".tsx"],
+      extensions: [".js", ".json", ".ts", ".tsx", ".mjs"],
       plugins: [
         // Support `tsconfig.json` `path` setting.
         new TsconfigPathsPlugin({
           configFile: paths.appTsconfig,
-          extensions: [".js", ".ts", ".tsx"],
+          extensions: [".js", ".ts", ".tsx", ".mjs"],
         }),
       ],
       alias: profilerSupport ? reactProfilerAlias : {},
@@ -435,12 +435,66 @@ export default function createWebpackConfig(
                 },
               ],
             },
+            {
+              test: /\.js$/,
+              include: [
+                path.resolve('./node_modules/@washingtonpost/wpds-ui-kit'),
+              ],
+              type: "javascript/esm",
+              use: [
+                {
+                  loader: require.resolve("babel-loader"),
+                  options: {
+                    configFile: false,
+                    babelrc: false,
+                    presets: [
+                      "@babel/typescript",
+                      [
+                        "@babel/env",
+                        { targets: { node: "current" }, modules: "commonjs" },
+                      ],
+                    ],
+                    // This is a feature of `babel-loader` for webpack (not Babel itself).
+                    // It enables caching results in ./node_modules/.cache/babel-loader/
+                    // directory for faster rebuilds.
+                    cacheDirectory: enableBuildCache,
+                  },
+                },
+              ],
+            },
+            {
+              test: /\.mjs$/,
+              include: /node_modules\//,
+              exclude:
+                /node_modules\/(@washingtonpost\/wpds-ui-kit|@babel|babel|core-js|webpack\/|regenerator-runtime)/,
+              type: "javascript/esm",
+              use: [
+                {
+                  loader: require.resolve("babel-loader"),
+                  options: {
+                    configFile: false,
+                    babelrc: false,
+                    presets: [
+                      "@babel/typescript",
+                      [
+                        "@babel/env",
+                        { targets: { node: "current" }, modules: "commonjs" },
+                      ],
+                    ],
+                    // This is a feature of `babel-loader` for webpack (not Babel itself).
+                    // It enables caching results in ./node_modules/.cache/babel-loader/
+                    // directory for faster rebuilds.
+                    cacheDirectory: enableBuildCache,
+                  },
+                },
+              ],
+            },
             // Makes sure node_modules are transpiled the way we need them to be.
             {
               test: /\.js$/,
               include: /node_modules\//,
               exclude:
-                /node_modules\/(@babel|babel|core-js|webpack\/|regenerator-runtime)/,
+                /node_modules\/(@washingtonpost\/wpds-ui-kit\/|@babel|babel|core-js|webpack\/|regenerator-runtime)/,
               use: [
                 {
                   loader: require.resolve("babel-loader"),
@@ -485,6 +539,25 @@ export default function createWebpackConfig(
                 },
               ],
             },
+            {
+              // Exclude `js` files to keep "css" loader working as it injects
+              // its runtime that would otherwise processed through "file" loader.
+              // Also exclude `html` and `json` extensions so they get processed
+              // by webpacks internal loaders.
+              exclude: [/\.(js|ts|tsx|mjs)$/, /\.html$/, /\.json$/],
+              loader: require.resolve("file-loader"),
+              options: {
+                // Because the resources loaded via CSS can sometimes be loaded
+                // directly from a CSS file, this will ensure that they are
+                // relative to those referencing files.
+                publicPath: (loaderPublicPath: string) => {
+                  return "../../" + loaderPublicPath;
+                },
+                name: isProduction
+                  ? "assets/media/[name].[contenthash].[ext]"
+                  : "assets/media/[name].[ext]",
+              },
+            },
             // "postcss" loader applies autoprefixer to our CSS.
             // "css" loader resolves paths in CSS and adds assets as dependencies.
             // We use a plugin to extract that CSS to a file.
@@ -519,25 +592,6 @@ export default function createWebpackConfig(
             // When building, they would get copied to the `build` folder.
             // This loader doesn't use a "test" so it will catch all modules
             // that fall through the other loaders.
-            {
-              // Exclude `js` files to keep "css" loader working as it injects
-              // its runtime that would otherwise processed through "file" loader.
-              // Also exclude `html` and `json` extensions so they get processed
-              // by webpacks internal loaders.
-              exclude: [/\.(js|ts|tsx)$/, /\.html$/, /\.json$/],
-              loader: require.resolve("file-loader"),
-              options: {
-                // Because the resources loaded via CSS can sometimes be loaded
-                // directly from a CSS file, this will ensure that they are
-                // relative to those referencing files.
-                publicPath: (loaderPublicPath: string) => {
-                  return "../../" + loaderPublicPath;
-                },
-                name: isProduction
-                  ? "assets/media/[name].[contenthash].[ext]"
-                  : "assets/media/[name].[ext]",
-              },
-            },
           ],
         },
         // ** STOP ** Are you adding a new loader?
